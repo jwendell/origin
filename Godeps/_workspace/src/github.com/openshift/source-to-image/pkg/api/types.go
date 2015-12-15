@@ -257,6 +257,7 @@ type SourceInfo struct {
 type CloneConfig struct {
 	Recursive bool
 	Quiet     bool
+	VerifySSL bool
 }
 
 // DockerNetworkMode specifies the network mode setting for the docker container

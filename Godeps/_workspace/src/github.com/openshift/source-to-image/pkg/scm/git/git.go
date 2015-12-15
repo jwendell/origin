@@ -79,6 +79,9 @@ func cloneConfigToArgs(opts api.CloneConfig) []string {
 	if opts.Recursive {
 		result = append(result, "--recursive")
 	}
+	if opts.VerifySSL {
+		result = append(result, "-c", "http.sslVerify=false")
+	}
 	return result
 }
 
@@ -399,6 +402,7 @@ func (h *stiGit) Clone(source, target string, c api.CloneConfig) error {
 
 	cloneArgs := append([]string{"clone"}, cloneConfigToArgs(c)...)
 	cloneArgs = append(cloneArgs, []string{source, target}...)
+	fmt.Fprintln(os.Stderr, "<<<CLONE ARGS>>>>", cloneArgs)
 	errReader, errWriter, _ := os.Pipe()
 	opts := util.CommandOpts{Stderr: errWriter}
 	err := h.runner.RunWithOptions(opts, "git", cloneArgs...)

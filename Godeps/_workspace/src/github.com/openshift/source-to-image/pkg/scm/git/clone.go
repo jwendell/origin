@@ -22,7 +22,7 @@ func (c *Clone) Download(config *api.Config) (*api.SourceInfo, error) {
 	var info *api.SourceInfo
 	hasRef := len(config.Ref) > 0
 	hasSubmodules := !config.DisableRecursive
-	cloneConfig := api.CloneConfig{Quiet: true, Recursive: hasSubmodules && !hasRef}
+	cloneConfig := api.CloneConfig{Quiet: true, Recursive: hasSubmodules && !hasRef, VerifySSL: true}
 
 	if c.ValidCloneSpec(config.Source) {
 		if len(config.ContextDir) > 0 {
