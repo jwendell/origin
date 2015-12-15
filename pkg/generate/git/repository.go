@@ -46,6 +46,7 @@ type SourceInfo struct {
 type CloneOptions struct {
 	Recursive bool
 	Quiet     bool
+	VerifySSL bool
 }
 
 // execGitFunc is a function that executes a Git command
@@ -179,15 +180,21 @@ func (r *repository) CloneWithOptions(location string, url string, opts CloneOpt
 	if opts.Recursive {
 		args = append(args, "--recursive")
 	}
+	if !opts.VerifySSL {
+		args = append(args, "-c", "http.sslVerify=false")
+	}
 	args = append(args, url)
 	args = append(args, location)
+	fmt.Fprintln(os.Stderr, "CloneWithOptions E", opts, args)
+	fmt.Println("CloneWithOptions O", opts, args)
+	glog.Error("CloneWithOptions GLOG E", opts, args)
 	_, _, err := r.git(nil, "", args...)
 	return err
 }
 
 // Clone clones a remote git repository to a local directory
 func (r *repository) Clone(location string, url string) error {
-	return r.CloneWithOptions(location, url, CloneOptions{Recursive: true})
+	return r.CloneWithOptions(location, url, CloneOptions{Recursive: true, VerifySSL: true})
 }
 
 // ListRemote lists references in a remote repository

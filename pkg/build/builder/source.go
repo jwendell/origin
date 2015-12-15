@@ -178,7 +178,7 @@ func extractGitSource(gitClient GitClient, gitSource *api.GitBuildSource, revisi
 
 	// Only use the quiet flag if Verbosity is not 5 or greater
 	quiet := !bool(glog.V(5))
-	if err := gitClient.CloneWithOptions(dir, gitSource.URI, git.CloneOptions{Recursive: true, Quiet: quiet}); err != nil {
+	if err := gitClient.CloneWithOptions(dir, gitSource.URI, git.CloneOptions{Recursive: true, Quiet: quiet, VerifySSL: false}); err != nil {
 		return true, err
 	}
 
