@@ -160,6 +160,10 @@ type RouterConfig struct {
 	// run.
 	ServiceAccount string
 
+	// ListenAddr specifies the IP address the router should bind/listen to. If unspecified,
+	// it will listen on all available addresses.
+	ListenAddr string
+
 	// ExternalHost specifies the hostname or IP address of an external host for
 	// router plugins that integrate with an external load balancer (such as f5).
 	ExternalHost string
@@ -304,6 +308,7 @@ func NewCmdRouter(f *clientcmd.Factory, parentName, name string, out, errout io.
 	cmd.Flags().StringVar(&cfg.ExternalHostPartitionPath, "external-host-partition-path", cfg.ExternalHostPartitionPath, "If the underlying router implementation uses partitions for control boundaries, this is the path to use for that partition.")
 	cmd.Flags().BoolVar(&cfg.DisableNamespaceOwnershipCheck, "disable-namespace-ownership-check", cfg.DisableNamespaceOwnershipCheck, "Disables the namespace ownership check and allows different namespaces to claim either different paths to a route host or overlapping host names in case of a wildcard route. The default behavior (false) to restrict claims to the oldest namespace that has claimed either the host or the subdomain. Please be aware that if namespace ownership checks are disabled, routes in a different namespace can use this mechanism to 'steal' sub-paths for existing domains. This is only safe if route creation privileges are restricted, or if all the users can be trusted.")
 	cmd.Flags().StringVar(&cfg.MaxConnections, "max-connections", cfg.MaxConnections, "Specifies the maximum number of concurrent connections.")
+	cmd.Flags().StringVar(&cfg.ListenAddr, "listen", cfg.ListenAddr, "The IP address the router should listen for connections on. Default is to listen on all available addresses.")
 
 	cfg.Action.BindForOutput(cmd.Flags())
 	cmd.Flags().String("output-version", "", "The preferred API versions of the output objects")
@@ -420,11 +425,15 @@ func generateProbeConfigForRouter(cfg *RouterConfig, ports []kapi.ContainerPort)
 			},
 		}
 
-		// Workaround for misconfigured environments where the Node's InternalIP is
-		// physically present on the Node.  In those environments the probes will
-		// fail unless a host firewall port is opened
-		if cfg.HostNetwork {
-			probe.Handler.HTTPGet.Host = "localhost"
+		if len(cfg.ListenAddr) > 0 {
+			probe.Handler.HTTPGet.Host = cfg.ListenAddr
+		} else {
+			// Workaround for misconfigured environments where the Node's InternalIP is
+			// physically present on the Node.  In those environments the probes will
+			// fail unless a host firewall port is opened
+			if cfg.HostNetwork {
+				probe.Handler.HTTPGet.Host = "localhost"
+			}
 		}
 	}
 
@@ -665,6 +674,12 @@ func RunCmdRouter(f *clientcmd.Factory, cmd *cobra.Command, out, errout io.Write
 			return fmt.Errorf("canonical hostname must not be an IP address: %s", cfg.RouterCanonicalHostname)
 		}
 		env["ROUTER_CANONICAL_HOSTNAME"] = cfg.RouterCanonicalHostname
+	}
+	if len(cfg.ListenAddr) > 0 {
+		if err := validation.IsValidIP(cfg.ListenAddr); err != nil {
+			return fmt.Errorf("listen address is not a valid IP address: %s", cfg.ListenAddr)
+		}
+		env["ROUTER_SERVICE_LISTEN_ADDR"] = cfg.ListenAddr
 	}
 	env.Add(secretEnv)
 	if len(defaultCert) > 0 {

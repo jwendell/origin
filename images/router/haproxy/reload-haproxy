@@ -12,6 +12,7 @@ readonly numeric_re='^[0-9]+$'
 
 function haproxyHealthCheck() {
   local wait_time=${MAX_RELOAD_WAIT_TIME:-$max_wait_time}
+  local host=${ROUTER_SERVICE_BIND_ADDR:-"localhost"}
   local port=${STATS_PORT:-"1936"}
   local retries=0
   local start_ts=$(date +"%s")
@@ -25,7 +26,7 @@ function haproxyHealthCheck() {
 
   echo " - Checking HAProxy /healthz on port $port ..."
   while true; do
-    local httpcode=$(curl $timeout_opts -s -o /dev/null -I -w "%{http_code}" http://localhost:${port}/healthz)
+    local httpcode=$(curl $timeout_opts -s -o /dev/null -I -w "%{http_code}" http://${host}:${port}/healthz)
 
     if [ "$httpcode" == "200" ]; then
       echo " - HAProxy port $port health check ok : $retries retry attempt(s)."
